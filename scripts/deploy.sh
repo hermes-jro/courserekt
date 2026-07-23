@@ -44,7 +44,7 @@ chown -R root:dockeruser "$new_source"
 chmod -R u=rwX,g=rX,o= "$new_source"
 
 export COURSEREKT_IMAGE="$new_image"
-if ! (cd "$new_source" && docker compose build); then
+if ! docker buildx build --load --tag "$new_image" "$new_source"; then
   rm -rf "$new_source"
   exit 1
 fi

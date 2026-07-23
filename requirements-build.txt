@@ -1,0 +1,5 @@
+-r requirements.txt
+cryptography==48.0.1
+pandas==2.3.3
+pypdf==6.13.3
+tabula-py==2.10.0

@@ -1,5 +1,7 @@
 # :rocket: CourseRekt
-## [Visit the website here!](https://courserekt.vercel.app/) :computer:
+## [Visit the maintained fork](https://agent.jro.sg/courserekt/) :computer:
+
+This fork includes NUS CourseReg data through **AY2026/2027 Semester 1, Round 1**. The report PDFs are downloaded from the official [NUS CourseReg Resources](https://www.nus.edu.sg/coursereg/resources.html) page and retained in the repository for reproducibility; hashes and retrieval details are recorded in [`docs/data-sources.md`](docs/data-sources.md).
 
 ![Image of the website](docs/images/preview.png)
 
@@ -35,6 +37,10 @@ Each cell corresponds to the data in the PDF for the course's class and round nu
     - (Unlikely) The admin changed the number of vacancies retroactively to `0`, so nobody can get in regardless.
 - If `y` is displayed as `∞`, the `Vacancy` in the respective PDF is `-`.
 - If `N/A` is displayed, the class data was neither found in the Vacancy PDF nor the CourseReg PDF.
+
+## Security
+
+The application backend makes no outbound network requests and the supplied Compose configuration runs it with `network_mode: none`, a read-only filesystem, all Linux capabilities dropped, and `no-new-privileges`. Dependencies are pinned and audited in CI. Bundled PDFs are treated as untrusted data: before inclusion they are checked for malformed structure, encryption that cannot be opened with an empty password, embedded files, JavaScript, launch actions, external URIs, and other active PDF content.
 
 ## Contributing
 

@@ -1,7 +1,6 @@
 import functools
 import re
 import sqlite3
-from datetime import datetime
 from pathlib import Path
 from typing import Union
 
@@ -9,10 +8,32 @@ from typing import Union
 PRE_2425_YEARS = ("2122", "2223", "2324")
 PRE_2425_ROUNDS = (0, 1, 2, 3)
 POST_2425_ROUNDS = (1, 2, 3)
+SEMESTERS = ("1", "2")
+STUDENT_TYPES = ("ug", "gd")
 
 INF = 2147483647
 NA = -1
 BASE_DIR = Path(Path(__file__).resolve()).parent
+
+
+def get_available_years() -> tuple[str, ...]:
+    """Return academic years for which CourseReg PDF data is bundled."""
+    pdf_root = BASE_DIR / "coursereg_history" / "data" / "pdfs"
+    return tuple(sorted(
+        path.name
+        for path in pdf_root.iterdir()
+        if path.is_dir() and re.fullmatch(r"[0-9]{4}", path.name)
+    ))
+
+
+def _validate_dataset_coordinates(year: str, semester: str, ug_gd: str) -> None:
+    """Reject values before they are interpolated into SQLite identifiers."""
+    if year not in get_available_years():
+        raise ValueError(f"Academic year {year!r} is unavailable.")
+    if semester not in SEMESTERS:
+        raise ValueError(f"Semester {semester!r} is invalid.")
+    if ug_gd not in STUDENT_TYPES:
+        raise ValueError(f"Student type {ug_gd!r} is invalid.")
 
 
 def _clean_year(year: Union[str, int]) -> str:
@@ -160,6 +181,7 @@ def get_data(year: Union[str, int],
     semester = _clean_semester(semester)
     ug_gd = _clean_ug_gd(ug_gd)
     code = _clean_code(code)
+    _validate_dataset_coordinates(year, semester, ug_gd)
 
     # Establish the database connection if not provided
     if conn is None:
@@ -191,16 +213,19 @@ def get_data(year: Union[str, int],
     # for each round, execute the SQL query
     round_numbers = get_round_numbers(year)
     for index, round_number in enumerate(round_numbers):
-        TABLE_NAME = (
+        table_name = (
             "src_history_merged_"
-            f"{year}_{semester}_{ug_gd}_round_{round_number}")
+            f"{year}_{semester}_{ug_gd}_round_{round_number}"
+        )
 
         if not pdf_exists(year, semester, ug_gd, round_number):
             continue
 
-        # Get every matching class of the course code
-        cursor = conn.execute(f"SELECT * FROM {TABLE_NAME} WHERE Code=?",
-                              (code,))
+        # Coordinates are allowlisted before constructing this identifier.
+        cursor = conn.execute(
+            f'SELECT * FROM "{table_name}" WHERE Code=?',  # nosec B608
+            (code,),
+        )
 
         ROWS = cursor.fetchall()
 
@@ -279,6 +304,7 @@ def _get_set_of_all_codes(year: Union[str, int],
     year = _clean_year(year)
     semester = _clean_semester(semester)
     ug_gd = _clean_ug_gd(ug_gd)
+    _validate_dataset_coordinates(year, semester, ug_gd)
 
     codes: set[str] = set()
 
@@ -290,19 +316,22 @@ def _get_set_of_all_codes(year: Union[str, int],
     # for each round, execute the SQL query
     round_numbers = get_round_numbers(year)
     for round_number in round_numbers:
-        TABLE_NAME = (
+        table_name = (
             "src_history_merged_"
-            f"{year}_{semester}_{ug_gd}_round_{round_number}")
+            f"{year}_{semester}_{ug_gd}_round_{round_number}"
+        )
 
-        # check if table exists first
         cursor = conn.execute(
             "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
-            (TABLE_NAME,))
+            (table_name,),
+        )
         if cursor.fetchone() is None:
             continue
 
-        # get every code from the table, and add it to the set
-        cursor = conn.execute(f"SELECT Code FROM {TABLE_NAME}")
+        # Coordinates are allowlisted before constructing this identifier.
+        cursor = conn.execute(
+            f'SELECT Code FROM "{table_name}"',  # nosec B608
+        )
 
         ROWS = cursor.fetchall()
         for row in ROWS:
@@ -429,43 +458,14 @@ def pdf_exists(year: Union[str, int],
 
 
 def get_latest_year_and_sem_with_data() -> tuple[str, str]:
-    """
-    Returns the latest year/sem that has coursereg PDF data.
-
-    Returns
-    -------
-        tuple[str, str]: Tuple containing (acad year, sem).
-    """
-    cur_year = datetime.now().year
-
-    def get_acad_year_starting_this_calendar_year(cur_year: int) -> str:
-        """
-        Returns the later AY starting in cur_year.
-        If cur_year is 2024, then it returns "2425".
-
-        Returns
-        -------
-            str: Later AY starting in current year.
-        """
-        last_two_digits = str(cur_year)[-2:]
-        last_two_digits_next_year = str(cur_year + 1)[-2:]
-
-        return last_two_digits + last_two_digits_next_year
-
-    cur_sem = 2
-    # Assumption: If UG Round 1 data exists, then that AY+Sem can be displayed.
-    while not pdf_exists(
-            get_acad_year_starting_this_calendar_year(cur_year),
-            cur_sem,
-            "ug",
-            1,
-    ):
-        if cur_sem == 2:
-            cur_sem -= 1
-        else:
-            cur_year -= 1
-            cur_sem = 2
-
-    latest_year = get_acad_year_starting_this_calendar_year(cur_year)
-    latest_sem = str(cur_sem)
-    return (latest_year, latest_sem)
+    """Return the newest bundled academic year and semester."""
+    pdf_root = BASE_DIR / "coursereg_history" / "data" / "pdfs"
+    candidates = {
+        (path.parents[2].name, path.parents[1].name)
+        for path in pdf_root.glob("*/*/ug/round_1.pdf")
+        if re.fullmatch(r"[0-9]{4}", path.parents[2].name)
+        and path.parents[1].name in SEMESTERS
+    }
+    if not candidates:
+        raise ValueError("No CourseReg datasets are available.")
+    return max(candidates)

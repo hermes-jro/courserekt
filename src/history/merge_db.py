@@ -4,8 +4,44 @@ import sqlite3
 from pathlib import Path
 
 from src.history.api import NA
+from src.history.import_csv_to_db import _table_name_from_path
 
 BASE_DIR = Path(__file__).resolve().parent
+
+MERGE_SQL_TEMPLATE = """
+CREATE TABLE {quoted_name} AS
+SELECT
+  COALESCE(vacancy.Faculty, coursereg.Faculty) AS Faculty,
+  COALESCE(vacancy.Department, coursereg.Department) AS Department,
+  COALESCE(vacancy.Code, coursereg.Code) AS Code,
+  COALESCE(vacancy.Title, coursereg.Title) AS Title,
+  COALESCE(vacancy.Class, coursereg.Class) AS Class,
+  COALESCE(vacancy.UG, {na}) AS UG,
+  COALESCE(vacancy.GD, {na}) AS GD,
+  COALESCE(vacancy.DK, {na}) AS DK,
+  COALESCE(vacancy.NG, {na}) AS NG,
+  COALESCE(vacancy.CPE, {na}) AS CPE,
+  COALESCE(coursereg.Vacancy, vacancy.{vacancy_column}) AS Vacancy,
+  COALESCE(coursereg.Demand, 0) AS Demand,
+  COALESCE(coursereg.Successful_Main, 0) AS Successful_Main,
+  COALESCE(coursereg.Successful_Reserve, 0) AS Successful_Reserve,
+  COALESCE(coursereg.Quota_Exceeded, 0) AS Quota_Exceeded,
+  COALESCE(coursereg.Timetable_Clashes, 0) AS Timetable_Clashes,
+  COALESCE(coursereg.Workload_Exceeded, 0) AS Workload_Exceeded,
+  COALESCE(coursereg.Others, 0) AS Others
+FROM
+  (
+    SELECT *
+    FROM {quoted_vacancy}
+    WHERE {vacancy_column} != {na}
+  ) AS vacancy
+FULL JOIN
+  {quoted_coursereg} AS coursereg
+ON
+  vacancy.Code = coursereg.Code
+AND
+  vacancy.Class = coursereg.Class;
+"""
 
 
 def merge_csv_files(csv_files: list[str]) -> None:
@@ -19,7 +55,7 @@ def merge_csv_files(csv_files: list[str]) -> None:
     for csv_file in csv_files:
         # Given name of CourseReg:
         # coursereg_history_data_cleaned_2324_1_ug_round_0
-        coursereg_name = os.path.splitext(csv_file)[0].replace("/", "_")
+        coursereg_name = _table_name_from_path(csv_file)
 
         is_ug: bool = "_ug_" in coursereg_name
 
@@ -34,42 +70,21 @@ def merge_csv_files(csv_files: list[str]) -> None:
         name = coursereg_name.replace("coursereg_history_data_cleaned_",
                                       "merged_")
 
-        conn.execute(f'DROP TABLE IF EXISTS "{name}"')
+        quoted_name = f'"{name}"'
+        quoted_vacancy = f'"{vacancy_name}"'
+        quoted_coursereg = f'"{coursereg_name}"'
+        vacancy_column = "UG" if is_ug else "GD"
 
-        conn.execute(f"""
-            CREATE TABLE {name} AS
-            SELECT
-              COALESCE(vacancy.Faculty, coursereg.Faculty) AS Faculty,
-              COALESCE(vacancy.Department, coursereg.Department) AS Department,
-              COALESCE(vacancy.Code, coursereg.Code) AS Code,
-              COALESCE(vacancy.Title, coursereg.Title) AS Title,
-              COALESCE(vacancy.Class, coursereg.Class) AS Class,
-              COALESCE(vacancy.UG, {NA}) AS UG,
-              COALESCE(vacancy.GD, {NA}) AS GD,
-              COALESCE(vacancy.DK, {NA}) AS DK,
-              COALESCE(vacancy.NG, {NA}) AS NG,
-              COALESCE(vacancy.CPE, {NA}) AS CPE,
-              COALESCE(coursereg.Vacancy, vacancy.{"UG" if is_ug else "GD"}) AS Vacancy,
-              COALESCE(coursereg.Demand, 0) AS Demand,
-              COALESCE(coursereg.Successful_Main, 0) AS Successful_Main,
-              COALESCE(coursereg.Successful_Reserve, 0) AS Successful_Reserve,
-              COALESCE(coursereg.Quota_Exceeded, 0) AS Quota_Exceeded,
-              COALESCE(coursereg.Timetable_Clashes, 0) AS Timetable_Clashes,
-              COALESCE(coursereg.Workload_Exceeded, 0) AS Workload_Exceeded,
-              COALESCE(coursereg.Others, 0) AS Others
-            FROM
-              (
-                SELECT *
-                FROM {vacancy_name}
-                WHERE {"UG" if is_ug else "GD"} != '{NA}'
-              ) AS vacancy
-            FULL JOIN
-              {coursereg_name} as coursereg
-            ON
-              vacancy.Code = coursereg.Code
-            AND
-              vacancy.Class = coursereg.Class;
-        """)
+        # All interpolated identifiers originate from an allowlisted table name.
+        conn.execute(f"DROP TABLE IF EXISTS {quoted_name}")  # nosec B608
+        create_query = MERGE_SQL_TEMPLATE.format(
+            quoted_name=quoted_name,
+            quoted_vacancy=quoted_vacancy,
+            quoted_coursereg=quoted_coursereg,
+            vacancy_column=vacancy_column,
+            na=NA,
+        )
+        conn.execute(create_query)
 
     conn.close()
 

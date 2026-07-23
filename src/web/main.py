@@ -15,7 +15,7 @@ def main() -> None:
     if not args.skip_precompute:
         generate_pages()
 
-    app.run(host="0.0.0.0", port=args.port, debug=True)
+    app.run(host="127.0.0.1", port=args.port, debug=False)
 
 
 if __name__ == "__main__":

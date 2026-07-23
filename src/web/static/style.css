@@ -2,10 +2,10 @@ body {
     display: flex;
     justify-content: center;
     height: 100vh;
-    font-size: 24px;
+    font-size: 16px;
     background-color: #F0F0F0;
     flex-direction: column;
-    font-family: 'Roboto', sans-serif;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 footer {
@@ -128,10 +128,19 @@ input[type=submit]:hover {
 }
 
 .help-icon {
-  right: 5px;
-  top: 50%;
-  transform: translateY(-50%);
-  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  margin-left: 3px;
+  border-radius: 50%;
+  background: #343a40;
+  color: #fff;
+  cursor: help;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .btn-secondary.active {

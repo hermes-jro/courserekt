@@ -85,16 +85,16 @@ def build(
         merge_db_fn(run_args)
     except KeyboardInterrupt:
         logger.info("KeyboardInterrupt obtained. Exiting...")
-        return
+        raise
     except Exception as exc:  # noqa: BLE001
         logger.critical("exc = %s", exc, exc_info=True)
-        return
+        raise
 
     logger.info("Database created!")
 
 
 # Define accepted values for year and semester
-YEAR_CHOICES = ("2122", "2223", "2324", "2425", "2526")
+YEAR_CHOICES = ("2122", "2223", "2324", "2425", "2526", "2627")
 SEMESTER_CHOICES = ("1", "2")
 TYPE_CHOICES = ("ug", "gd")
 ROUND_CHOICES = ("0", "1", "2", "3")

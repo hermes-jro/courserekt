@@ -1,10 +1,18 @@
 import argparse
 import os
+import re
 import sqlite3
 
 import pandas as pd
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+def _table_name_from_path(csv_file: str) -> str:
+    table_name = os.path.splitext(csv_file)[0].replace("/", "_")
+    if not re.fullmatch(r"[A-Za-z0-9_]+", table_name):
+        raise ValueError(f"Unsafe CSV path for SQLite table: {csv_file!r}")
+    return table_name
 
 
 def process_csv_files(csv_files: list[str], is_cleaning: bool = False) -> None:
@@ -16,10 +24,10 @@ def process_csv_files(csv_files: list[str], is_cleaning: bool = False) -> None:
 
     for csv_file in csv_files:
         # Get the name of the table from the filename
-        table_name = os.path.splitext(csv_file)[0].replace("/", "_")
+        table_name = _table_name_from_path(csv_file)
 
-        # Drop the existing table (if it exists)
-        conn.execute(f'DROP TABLE IF EXISTS "{table_name}"')
+        # Identifier is allowlisted by _table_name_from_path.
+        conn.execute(f'DROP TABLE IF EXISTS "{table_name}"')  # nosec B608
 
         if not is_cleaning:
             # Read the CSV file into a pandas DataFrame

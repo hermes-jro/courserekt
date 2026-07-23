@@ -35,7 +35,7 @@ class AppTestCase(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertNotIn(b"bootstrap-4.5.2.min.css", response.data)
-        self.assertIn(b'href="/courserekt/static/style.css?v=7"', response.data)
+        self.assertIn(b'href="/courserekt/static/style.css?v=8"', response.data)
         self.assertIn(b'action="/courserekt/"', response.data)
 
     def test_invalid_form_coordinates_are_rejected(self) -> None:

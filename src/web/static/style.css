@@ -613,6 +613,22 @@ tbody tr:hover td:not(.less-demand):not(.more-demand):not(.no-data) {
   color: var(--red-text);
 }
 
+.oversubscription-badge {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  margin: 4px auto 0;
+  padding: 2px 6px;
+  border: 1px solid rgba(153, 27, 27, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.58);
+  color: #7f1d1d;
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+}
+
 .equal-demand {
   background: #fff;
   color: var(--ink);

@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#f4f7fb">
     <title>CourseRekt</title>
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=7">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=8">
     <script src="{{ url_for('static', filename='script.js') }}?v=5" defer></script>
   </head>
   <body>
@@ -175,6 +175,10 @@
                       {% set forecast = data.ug if student_type == 'ug' else data.gd %}
                       ({% if forecast == -1 %}N/A{% elif forecast == INF %}∞{% else %}{{ forecast }}{% endif %})
                     </span>
+                    {% set oversubscription = format_oversubscription(data.demand, data.vacancy) %}
+                    {% if oversubscription %}
+                    <span class="oversubscription-badge">{{ oversubscription }}</span>
+                    {% endif %}
                     {% endif %}
                   </td>
                   {% endfor %}

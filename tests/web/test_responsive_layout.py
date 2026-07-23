@@ -20,6 +20,8 @@ class ResponsiveLayoutTestCase(unittest.TestCase):
         self.assertIn('aria-describedby="table-scroll-hint"', html)
         self.assertIn('<fieldset', html)
         self.assertIn('<legend', html)
+        self.assertIn('class="oversubscription-badge"', html)
+        self.assertIn("format_oversubscription(data.demand, data.vacancy)", html)
         self.assertNotIn("bootstrap-4.5.2.min.css", html)
 
     def test_styles_include_touch_and_horizontal_scroll_guards(self) -> None:
@@ -29,6 +31,7 @@ class ResponsiveLayoutTestCase(unittest.TestCase):
         self.assertIn("overflow-x: auto", css)
         self.assertIn("min-height: 44px", css)
         self.assertIn("position: sticky", css)
+        self.assertIn(".oversubscription-badge", css)
         self.assertNotIn("height: 100vh", css)
 
 

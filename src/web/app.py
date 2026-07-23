@@ -38,6 +38,16 @@ def format_acad_year(year: str) -> str:
     return f"{year[:2]}/{year[2:]}"
 
 
+def format_oversubscription(demand: int, vacancy: int) -> str | None:
+    """Return how far demand exceeds finite capacity, rounded to a whole percent."""
+    if demand < 0 or vacancy < 0 or vacancy == INF or demand <= vacancy:
+        return None
+    if vacancy == 0:
+        return "No capacity"
+    percentage = round((demand - vacancy) * 100 / vacancy)
+    return f"+{percentage}% over"
+
+
 @app.context_processor
 def context_processor() -> dict[str, Any]:
     """Expose read-only helpers used by the history template."""
@@ -45,6 +55,7 @@ def context_processor() -> dict[str, Any]:
         "INF": INF,
         "available_years": get_available_years(),
         "format_acad_year": format_acad_year,
+        "format_oversubscription": format_oversubscription,
         "pdf_exists": pdf_exists,
         "get_round_numbers": get_round_numbers,
     }

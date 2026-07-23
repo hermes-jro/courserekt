@@ -3,130 +3,194 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#f4f7fb">
     <title>CourseRekt</title>
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap-4.5.2.min.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=6">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=7">
     <script src="{{ url_for('static', filename='script.js') }}?v=5" defer></script>
   </head>
   <body>
-    <div class="my-container">
-      <div class="form-container">
-        <h1 style="font-size: 26px; font-weight: bold; margin: 0 auto 1rem;">🚀 CourseRekt 😵</h1>
-        <p style="font-size: 1rem;">View current and past data for the registration of NUS courses easily!</p>
-        <form id="course-form" method="POST" action="{{ url_for('history') }}">
-          <div class="form-group">
-            <b>Academic Year:</b><br>
-            <div class="btn-group-toggle" data-toggle="buttons">
-              {% for available_year in available_years %}
-              <label class="btn btn-secondary {% if year == available_year %}active{% endif %}">
-                <input type="radio" id="year-{{ available_year }}" name="year" value="{{ available_year }}" autocomplete="off" {% if year == available_year %}checked{% endif %}>
-                {{ format_acad_year(available_year) }}
-              </label>
-              {% endfor %}
-            </div>
+    <div class="page-shell">
+      <header class="app-header">
+        <div class="brand-block">
+          <div class="brand-mark" aria-hidden="true">🚀</div>
+          <div>
+            <h1>CourseRekt</h1>
+            <p>See how NUS courses filled across CourseReg rounds.</p>
           </div>
-          <div class="form-group">
-            <b>Semester:</b><br>
-            <div class="btn-group-toggle" data-toggle="buttons">
-              <label class="btn btn-secondary {% if semester == '1' %}active{% endif %}">
-                <input type="radio" id="semester1" name="semester" value="1" autocomplete="off" {% if semester == '1' %}checked{% endif %}> Semester 1
-              </label>
-              <label class="btn btn-secondary {% if semester == '2' %}active{% endif %}">
-                <input type="radio" id="semester2" name="semester" value="2" autocomplete="off" {% if semester == '2' %}checked{% endif %}> Semester 2
-              </label>
-            </div>
-          </div>
-          <div class="form-group">
-            <b>Type:</b><br>
-            <div class="btn-group-toggle" data-toggle="buttons">
-              <label class="btn btn-secondary {% if student_type == 'ug' %}active{% endif %}">
-                <input type="radio" id="ug" name="type" value="ug" autocomplete="off" {% if student_type == 'ug' %}checked{% endif %}> Undergraduate
-              </label>
-              <label class="btn btn-secondary {% if student_type == 'gd' %}active{% endif %}">
-                <input type="radio" id="gd" name="type" value="gd" autocomplete="off" {% if student_type == 'gd' %}checked{% endif %}> Graduate
-              </label>
-            </div>
-          </div>
-        </form>
-        <b>Course Codes:</b><br>
-        <div class="search-bar-container">
-          <input type="text" id="search-input" name="search-input" placeholder="Search course codes..." autocomplete="off" autofocus>
-          <span class="help-icon" title="Add spaces for additional matches (e.g. 'CS2 EL GESS')">?</span>
         </div>
-        <label for="toggle-course-names-checkbox" class="btn btn-secondary">
-          <input type="checkbox" id="toggle-course-names-checkbox" style="transform: scale(1.2);" autocomplete="off" checked>
-          &nbsp;Show Course Names
-        </label>
-        <div>
-          <label for="toggle-forecast-checkbox" class="btn btn-secondary">
-            <input type="checkbox" id="toggle-forecast-checkbox" style="transform: scale(1.2);" autocomplete="off" checked>
-            &nbsp;Show Original Vacancies
-          </label>
-          <span class="help-icon" title="Original number of slots at the start of the round">?</span>
+        <div class="dataset-badge" aria-label="Current dataset">
+          <span class="dataset-label">Viewing</span>
+          <strong>{{ format_acad_year(year) }} · Sem {{ semester }} · {{ 'Undergraduate' if student_type == 'ug' else 'Graduate' }}</strong>
         </div>
-        {% if error %}
-        <div class="alert alert-danger">
-          <strong>Error:</strong> {{ error }}
-        </div>
-        {% endif %}
-        <div id="loading-spinner" class="hidden">
-          <div class="spinner"></div>
-        </div>
-      </div>
+      </header>
 
-      {% set round_nums = get_round_numbers(year) %}
-      <div class="table-container">
-        <table id="table-data">
-          <thead>
-            <tr>
-              <th class="table-code">Code</th>
-              <th class="table-name">Name</th>
-              <th class="table-class">Class</th>
-              {% for round_num in round_nums %}
-              <th class="table-round">
-                {% if pdf_exists(year, semester, student_type, round_num) %}
-                <a href="{{ url_for('serve_pdf', year=year, semester=semester, student_type=student_type, round_num=round_num) }}" target="_blank" rel="noopener noreferrer">Round {{ round_num }}</a>
-                {% else %}
-                Round {{ round_num }}
-                {% endif %}
-              </th>
-              {% endfor %}
-            </tr>
-          </thead>
-          <tbody>
-            {% for course in output %}
-            {% for class_name, class_data in course.classes.items() %}
-            <tr>
-              <td>{{ course.code }}</td>
-              <td>
-                {% if loop.first %}
-                  <a href="{{ url_for('nusmods_course', code=course.code) }}" target="_blank" rel="noopener noreferrer">{{ course.title }}</a>
-                {% endif %}
-              </td>
-              <td>{{ class_name }}</td>
-              {% for data in class_data %}
-              <td class="{% if data.demand == -1 and data.vacancy == -1 %}no-data{% elif data.demand < data.vacancy %}less-demand{% elif data.demand > data.vacancy %}more-demand{% else %}equal-demand{% endif %}">
-                {% if data.demand == -1 and data.vacancy == -1 %}
-                N/A
-                {% else %}
-                {{ data.demand }} / {% if data.vacancy == INF %}∞{% else %}{{ data.vacancy }}{% endif %}
-                <span class="vacancy-data">
-                  {% set forecast = data.ug if student_type == 'ug' else data.gd %}
-                  ({% if forecast == -1 %}N/A{% elif forecast == INF %}∞{% else %}{{ forecast }}{% endif %})
-                </span>
-                {% endif %}
-              </td>
-              {% endfor %}
-            </tr>
-            {% endfor %}
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
+      <main class="app-layout">
+        <aside class="controls-card" aria-labelledby="filters-heading">
+          <div class="card-heading">
+            <div>
+              <p class="eyebrow">Explore the archive</p>
+              <h2 id="filters-heading">Filters</h2>
+            </div>
+            <span class="auto-update">Updates instantly</span>
+          </div>
+
+          <form id="course-form" method="POST" action="{{ url_for('history') }}">
+            <fieldset class="filter-section">
+              <legend>Academic year</legend>
+              <div class="choice-grid year-grid">
+                {% for available_year in available_years %}
+                <label class="choice {% if year == available_year %}active{% endif %}">
+                  <input type="radio" id="year-{{ available_year }}" name="year" value="{{ available_year }}" autocomplete="off" {% if year == available_year %}checked{% endif %}>
+                  <span>{{ format_acad_year(available_year) }}</span>
+                </label>
+                {% endfor %}
+              </div>
+            </fieldset>
+
+            <fieldset class="filter-section">
+              <legend>Semester</legend>
+              <div class="choice-grid two-column">
+                <label class="choice {% if semester == '1' %}active{% endif %}">
+                  <input type="radio" id="semester1" name="semester" value="1" autocomplete="off" {% if semester == '1' %}checked{% endif %}>
+                  <span>Semester 1</span>
+                </label>
+                <label class="choice {% if semester == '2' %}active{% endif %}">
+                  <input type="radio" id="semester2" name="semester" value="2" autocomplete="off" {% if semester == '2' %}checked{% endif %}>
+                  <span>Semester 2</span>
+                </label>
+              </div>
+            </fieldset>
+
+            <fieldset class="filter-section">
+              <legend>Student type</legend>
+              <div class="choice-grid two-column">
+                <label class="choice {% if student_type == 'ug' %}active{% endif %}">
+                  <input type="radio" id="ug" name="type" value="ug" autocomplete="off" {% if student_type == 'ug' %}checked{% endif %}>
+                  <span>Undergraduate</span>
+                </label>
+                <label class="choice {% if student_type == 'gd' %}active{% endif %}">
+                  <input type="radio" id="gd" name="type" value="gd" autocomplete="off" {% if student_type == 'gd' %}checked{% endif %}>
+                  <span>Graduate</span>
+                </label>
+              </div>
+            </fieldset>
+          </form>
+
+          <section class="search-section" aria-labelledby="search-label">
+            <div class="control-label-row">
+              <label id="search-label" for="search-input">Find courses</label>
+              <span class="help-icon" title="Separate multiple prefixes with spaces, for example: CS2 EL GESS" aria-label="Search help">?</span>
+            </div>
+            <div class="search-bar-container">
+              <span class="search-icon" aria-hidden="true">⌕</span>
+              <input type="search" id="search-input" name="search-input" placeholder="Try CS2100 or CS2 GESS" autocomplete="off" autofocus>
+            </div>
+            <p class="control-help">Search one or more course-code prefixes.</p>
+          </section>
+
+          <section class="display-section" aria-labelledby="display-heading">
+            <h3 id="display-heading">Display</h3>
+            <label for="toggle-course-names-checkbox" class="toggle-row">
+              <span>
+                <strong>Course names</strong>
+                <small>Show the full course title</small>
+              </span>
+              <input type="checkbox" id="toggle-course-names-checkbox" autocomplete="off" checked>
+            </label>
+            <label for="toggle-forecast-checkbox" class="toggle-row">
+              <span>
+                <strong>Original vacancies</strong>
+                <small>Show starting slots in brackets</small>
+              </span>
+              <input type="checkbox" id="toggle-forecast-checkbox" autocomplete="off" checked>
+            </label>
+          </section>
+
+          {% if error %}
+          <div class="alert" role="alert">
+            <strong>Could not load that selection.</strong>
+            <span>{{ error }}</span>
+          </div>
+          {% endif %}
+
+          <div id="loading-spinner" class="loading-state hidden" aria-live="polite">
+            <div class="spinner" aria-hidden="true"></div>
+            <span>Loading data…</span>
+          </div>
+        </aside>
+
+        {% set round_nums = get_round_numbers(year) %}
+        <section class="data-card" aria-labelledby="results-heading">
+          <div class="data-toolbar">
+            <div>
+              <p class="eyebrow">CourseReg history</p>
+              <h2 id="results-heading">Demand and vacancy</h2>
+              <p class="results-meta">{{ output|length }} courses · values show demand / vacancy <span class="vacancy-data">(original)</span></p>
+            </div>
+            <div class="legend" aria-label="Table colour legend">
+              <span><i class="legend-dot less-demand"></i>Capacity available</span>
+              <span><i class="legend-dot more-demand"></i>Oversubscribed</span>
+              <span><i class="legend-dot no-data"></i>No data</span>
+            </div>
+          </div>
+
+          <p id="table-scroll-hint" class="swipe-hint"><span aria-hidden="true">↔</span> Swipe horizontally to view every round.</p>
+          <div class="table-scroll" role="region" aria-label="Course demand and vacancy table" aria-describedby="table-scroll-hint" tabindex="0">
+            <table id="table-data">
+              <thead>
+                <tr>
+                  <th class="table-code" scope="col">Code</th>
+                  <th class="table-name" scope="col">Course name</th>
+                  <th class="table-class" scope="col">Class</th>
+                  {% for round_num in round_nums %}
+                  <th class="table-round" scope="col">
+                    {% if pdf_exists(year, semester, student_type, round_num) %}
+                    <a href="{{ url_for('serve_pdf', year=year, semester=semester, student_type=student_type, round_num=round_num) }}" target="_blank" rel="noopener noreferrer">Round {{ round_num }} <span aria-hidden="true">↗</span></a>
+                    {% else %}
+                    Round {{ round_num }}
+                    {% endif %}
+                  </th>
+                  {% endfor %}
+                </tr>
+              </thead>
+              <tbody>
+                {% for course in output %}
+                {% for class_name, class_data in course.classes.items() %}
+                <tr>
+                  <td class="course-code">{{ course.code }}</td>
+                  <td class="course-name">
+                    {% if loop.first %}
+                    <a href="{{ url_for('nusmods_course', code=course.code) }}" target="_blank" rel="noopener noreferrer">{{ course.title }}</a>
+                    {% endif %}
+                  </td>
+                  <td>{{ class_name }}</td>
+                  {% for data in class_data %}
+                  <td class="round-value {% if data.demand == -1 and data.vacancy == -1 %}no-data{% elif data.demand < data.vacancy %}less-demand{% elif data.demand > data.vacancy %}more-demand{% else %}equal-demand{% endif %}">
+                    {% if data.demand == -1 and data.vacancy == -1 %}
+                    N/A
+                    {% else %}
+                    {{ data.demand }} / {% if data.vacancy == INF %}∞{% else %}{{ data.vacancy }}{% endif %}
+                    <span class="vacancy-data">
+                      {% set forecast = data.ug if student_type == 'ug' else data.gd %}
+                      ({% if forecast == -1 %}N/A{% elif forecast == INF %}∞{% else %}{{ forecast }}{% endif %})
+                    </span>
+                    {% endif %}
+                  </td>
+                  {% endfor %}
+                </tr>
+                {% endfor %}
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+
+      <footer>
+        <span>Built from official NUS CourseReg reports.</span>
+        <a class="github-link" href="https://github.com/hermes-jro/courserekt" target="_blank" rel="noopener noreferrer">View source ↗</a>
+      </footer>
     </div>
-    <footer>
-      ❤️ • <a class="github-link" href="https://github.com/hermes-jro/courserekt" target="_blank" rel="noopener noreferrer">GitHub</a>
-    </footer>
   </body>
 </html>

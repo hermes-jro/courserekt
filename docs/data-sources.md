@@ -10,7 +10,7 @@ The source first appeared in live Discord history in guild `1524704629558870127`
 | --- | --- | --- | ---: | --- |
 | `src/history/vacancy_history/data/pdfs/2627/1/round_2.pdf` | `https://www.nus.edu.sg/coursereg/docs/VacancyRpt_R2.pdf` | `40fb6145167103ee8e4afad9cd6ec6745a858791460b5136686e248b0f9e2ee7` | 252 | As at 27-Jul-26; updated 27/07/2026 |
 
-The file starts with `%PDF-1.6`, ends with a PDF EOF marker, and identifies its producer as Oracle Analytics Publisher. Strict parsing extracted 1,542,524 characters from all 252 pages with no empty pages: every page identifies `Course Class Vacancy Report`, `Semester 1, AY2026/2027`, and `As at 27-Jul-26`, while page 1 also states `updated: 27/07/2026`.
+The file starts with `%PDF-1.6`, ends with a PDF EOF marker, and identifies its producer as Oracle Analytics Publisher. Strict parsing with pypdf 6.14.2 extracted 784,360 characters from all 252 pages with no empty pages: every page identifies `Course Class Vacancy Report`, `Semester 1, AY2026/2027`, and `As at 27-Jul-26`, while page 1 also states `updated: 27/07/2026`.
 
 `qpdf --check` found no syntax or stream-encoding errors. The repository active-content audit, run as an unprivileged user in a read-only, network-disabled container, found no embedded files, JavaScript, launch/open actions, external URIs, XFA, rich media, or other active content. The PDF uses AESv2 permissions but opens with an empty password and was completely parsed without executing embedded content.
 

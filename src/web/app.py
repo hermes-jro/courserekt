@@ -24,7 +24,9 @@ from src.history.api import (
     get_latest_year_and_sem_with_data,
     get_pdf_filepath,
     get_round_numbers,
+    get_vacancy_pdf_filepath,
     pdf_exists,
+    vacancy_pdf_exists,
 )
 
 app = Flask(__name__)
@@ -40,12 +42,23 @@ def format_acad_year(year: str) -> str:
 
 def format_oversubscription(demand: int, vacancy: int) -> str | None:
     """Return how far demand exceeds finite capacity, rounded to a whole percent."""
-    if demand < 0 or vacancy < 0 or vacancy == INF or demand <= vacancy:
+    if (
+        demand < 0
+        or vacancy < 0
+        or demand == INF
+        or vacancy == INF
+        or demand <= vacancy
+    ):
         return None
     if vacancy == 0:
         return "No capacity"
     percentage = round((demand - vacancy) * 100 / vacancy)
     return f"+{percentage}% over"
+
+
+def format_demand(demand: int) -> str:
+    """Format missing demand explicitly while allocation reports are pending."""
+    return "Pending" if demand < 0 else str(demand)
 
 
 @app.context_processor
@@ -55,8 +68,10 @@ def context_processor() -> dict[str, Any]:
         "INF": INF,
         "available_years": get_available_years(),
         "format_acad_year": format_acad_year,
+        "format_demand": format_demand,
         "format_oversubscription": format_oversubscription,
         "pdf_exists": pdf_exists,
+        "vacancy_pdf_exists": vacancy_pdf_exists,
         "get_round_numbers": get_round_numbers,
     }
 
@@ -140,22 +155,28 @@ def serve_pdf(
     student_type: str,
     round_num: Union[str, int],
 ) -> Response:
-    """Serve one bundled NUS CourseReg report."""
+    """Serve one bundled NUS demand/allocation or vacancy report."""
     year_text = str(year)
     semester_text = str(semester)
     round_text = str(round_num)
     if (
         year_text not in get_available_years()
         or semester_text not in SEMESTERS
-        or student_type not in STUDENT_TYPES
+        or student_type not in (*STUDENT_TYPES, "vacancy")
         or int(round_text) not in get_round_numbers(year_text)
-        or not pdf_exists(year_text, semester_text, student_type, round_text)
     ):
         abort(404)
 
-    filepath = get_pdf_filepath(
-        year_text, semester_text, student_type, round_text
-    )
+    if student_type == "vacancy":
+        filepath = get_vacancy_pdf_filepath(
+            year_text, semester_text, round_text
+        )
+    else:
+        filepath = get_pdf_filepath(
+            year_text, semester_text, student_type, round_text
+        )
+    if not filepath.is_file():
+        abort(404)
     return send_from_directory(
         filepath.parent,
         filepath.name,

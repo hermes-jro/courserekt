@@ -43,57 +43,124 @@ AND
   vacancy.Class = coursereg.Class;
 """
 
+VACANCY_ONLY_SQL_TEMPLATE = """
+CREATE TABLE {quoted_name} AS
+SELECT
+  vacancy.Faculty AS Faculty,
+  vacancy.Department AS Department,
+  vacancy.Code AS Code,
+  vacancy.Title AS Title,
+  vacancy.Class AS Class,
+  vacancy.UG AS UG,
+  vacancy.GD AS GD,
+  vacancy.DK AS DK,
+  vacancy.NG AS NG,
+  vacancy.CPE AS CPE,
+  vacancy.{vacancy_column} AS Vacancy,
+  {na} AS Demand,
+  {na} AS Successful_Main,
+  {na} AS Successful_Reserve,
+  {na} AS Quota_Exceeded,
+  {na} AS Timetable_Clashes,
+  {na} AS Workload_Exceeded,
+  {na} AS Others
+FROM {quoted_vacancy} AS vacancy
+WHERE vacancy.{vacancy_column} != {na};
+"""
 
-def merge_csv_files(csv_files: list[str]) -> None:
-    """
-    Given a list of CourseReg History cleaned files,
-    after having imported all relevant CSVs,
-    attempt to merge them with useful Vacancy Histories.
-    """
-    conn = sqlite3.connect(os.path.join(BASE_DIR, "database.db"))
 
-    for csv_file in csv_files:
-        # Given name of CourseReg:
-        # coursereg_history_data_cleaned_2324_1_ug_round_0
-        coursereg_name = _table_name_from_path(csv_file)
+def _table_exists(conn: sqlite3.Connection, table_name: str) -> bool:
+    cursor = conn.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?",
+        (table_name,),
+    )
+    return cursor.fetchone() is not None
 
-        is_ug: bool = "_ug_" in coursereg_name
 
-        # Corresponding name of Vacancy:
-        # vacancy_history_data_cleaned_2324_1_round_0
-        vacancy_name = (coursereg_name.replace("coursereg_history_",
-                                               "vacancy_history_")
-                        .replace("_ug_", "_")
-                        .replace("_gd_", "_"))
+def _merge_coursereg_table(conn: sqlite3.Connection, coursereg_name: str) -> None:
+    is_ug = "_ug_" in coursereg_name
+    vacancy_name = (
+        coursereg_name.replace("coursereg_history_", "vacancy_history_")
+        .replace("_ug_", "_")
+        .replace("_gd_", "_")
+    )
+    name = coursereg_name.replace("coursereg_history_data_cleaned_", "merged_")
+    quoted_name = f'"{name}"'
+    vacancy_column = "UG" if is_ug else "GD"
 
-        # Corresponding name of Merged: merged_2324_1_ug_round_0
-        name = coursereg_name.replace("coursereg_history_data_cleaned_",
-                                      "merged_")
-
-        quoted_name = f'"{name}"'
-        quoted_vacancy = f'"{vacancy_name}"'
-        quoted_coursereg = f'"{coursereg_name}"'
-        vacancy_column = "UG" if is_ug else "GD"
-
-        # All interpolated identifiers originate from an allowlisted table name.
-        conn.execute(f"DROP TABLE IF EXISTS {quoted_name}")  # nosec B608
-        create_query = MERGE_SQL_TEMPLATE.format(
+    conn.execute(f"DROP TABLE IF EXISTS {quoted_name}")  # nosec B608
+    conn.execute(
+        MERGE_SQL_TEMPLATE.format(
             quoted_name=quoted_name,
-            quoted_vacancy=quoted_vacancy,
-            quoted_coursereg=quoted_coursereg,
+            quoted_vacancy=f'"{vacancy_name}"',
+            quoted_coursereg=f'"{coursereg_name}"',
             vacancy_column=vacancy_column,
             na=NA,
         )
-        conn.execute(create_query)
+    )
+
+
+def _merge_vacancy_only_table(
+    conn: sqlite3.Connection,
+    vacancy_name: str,
+    student_type: str,
+    vacancy_column: str,
+) -> None:
+    name = vacancy_name.replace(
+        "vacancy_history_data_cleaned_", "merged_"
+    ).replace("_round_", f"_{student_type}_round_")
+    quoted_name = f'"{name}"'
+    conn.execute(f"DROP TABLE IF EXISTS {quoted_name}")  # nosec B608
+    conn.execute(
+        VACANCY_ONLY_SQL_TEMPLATE.format(
+            quoted_name=quoted_name,
+            quoted_vacancy=f'"{vacancy_name}"',
+            vacancy_column=vacancy_column,
+            na=NA,
+        )
+    )
+
+
+def merge_csv_files(csv_files: list[str]) -> None:
+    """Merge reports, including rounds where only vacancy data is published."""
+    conn = sqlite3.connect(os.path.join(BASE_DIR, "database.db"))
+    table_names = {_table_name_from_path(csv_file) for csv_file in csv_files}
+    coursereg_names = sorted(
+        name
+        for name in table_names
+        if "coursereg_history_data_cleaned_" in name
+    )
+    vacancy_names = sorted(
+        name
+        for name in table_names
+        if "vacancy_history_data_cleaned_" in name
+    )
+
+    for coursereg_name in coursereg_names:
+        _merge_coursereg_table(conn, coursereg_name)
+
+    for vacancy_name in vacancy_names:
+        for student_type, vacancy_column in (("ug", "UG"), ("gd", "GD")):
+            coursereg_name = vacancy_name.replace(
+                "vacancy_history_data_cleaned_",
+                "coursereg_history_data_cleaned_",
+            ).replace("_round_", f"_{student_type}_round_")
+            if not _table_exists(conn, coursereg_name):
+                _merge_vacancy_only_table(
+                    conn, vacancy_name, student_type, vacancy_column
+                )
 
     conn.close()
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Merge some CSV files.")
-    parser.add_argument("csv_files", metavar="N", type=str, nargs="+",
-                        help="CSV files to be merged")
-
+    parser.add_argument(
+        "csv_files", metavar="N", type=str, nargs="+", help="CSV files to be merged"
+    )
     args = parser.parse_args()
-
     merge_csv_files(args.csv_files)
+
+
+if __name__ == "__main__":
+    main()

@@ -32,6 +32,7 @@ class ResponsiveLayoutTestCase(unittest.TestCase):
         self.assertIn("min-height: 44px", css)
         self.assertIn("position: sticky", css)
         self.assertIn(".oversubscription-badge", css)
+        self.assertIn(".pending-demand", css)
         self.assertNotIn("height: 100vh", css)
 
 

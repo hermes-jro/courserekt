@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#f4f7fb">
     <title>CourseRekt</title>
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=8">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=9">
     <script src="{{ url_for('static', filename='script.js') }}?v=5" defer></script>
   </head>
   <body>
@@ -126,11 +126,12 @@
             <div>
               <p class="eyebrow">CourseReg history</p>
               <h2 id="results-heading">Demand and vacancy</h2>
-              <p class="results-meta">{{ output|length }} courses · values show demand / vacancy <span class="vacancy-data">(original)</span></p>
+              <p class="results-meta">{{ output|length }} courses · values show demand / vacancy <span class="vacancy-data">(original)</span>; “Pending” means the demand report is not published yet.</p>
             </div>
             <div class="legend" aria-label="Table colour legend">
               <span><i class="legend-dot less-demand"></i>Capacity available</span>
               <span><i class="legend-dot more-demand"></i>Oversubscribed</span>
+              <span><i class="legend-dot pending-demand"></i>Demand pending</span>
               <span><i class="legend-dot no-data"></i>No data</span>
             </div>
           </div>
@@ -147,6 +148,9 @@
                   <th class="table-round" scope="col">
                     {% if pdf_exists(year, semester, student_type, round_num) %}
                     <a href="{{ url_for('serve_pdf', year=year, semester=semester, student_type=student_type, round_num=round_num) }}" target="_blank" rel="noopener noreferrer">Round {{ round_num }} <span aria-hidden="true">↗</span></a>
+                    {% elif vacancy_pdf_exists(year, semester, round_num) %}
+                    <a href="{{ url_for('serve_pdf', year=year, semester=semester, student_type='vacancy', round_num=round_num) }}" target="_blank" rel="noopener noreferrer" title="Demand report pending; open vacancy report">Round {{ round_num }} <span aria-hidden="true">↗</span></a>
+                    <small>Vacancy only</small>
                     {% else %}
                     Round {{ round_num }}
                     {% endif %}
@@ -166,11 +170,11 @@
                   </td>
                   <td>{{ class_name }}</td>
                   {% for data in class_data %}
-                  <td class="round-value {% if data.demand == -1 and data.vacancy == -1 %}no-data{% elif data.demand < data.vacancy %}less-demand{% elif data.demand > data.vacancy %}more-demand{% else %}equal-demand{% endif %}">
+                  <td class="round-value {% if data.demand == -1 and data.vacancy == -1 %}no-data{% elif data.demand == -1 %}pending-demand{% elif data.demand < data.vacancy %}less-demand{% elif data.demand > data.vacancy %}more-demand{% else %}equal-demand{% endif %}">
                     {% if data.demand == -1 and data.vacancy == -1 %}
                     N/A
                     {% else %}
-                    {{ data.demand }} / {% if data.vacancy == INF %}∞{% else %}{{ data.vacancy }}{% endif %}
+                    {{ format_demand(data.demand) }} / {% if data.vacancy == INF %}∞{% else %}{{ data.vacancy }}{% endif %}
                     <span class="vacancy-data">
                       {% set forecast = data.ug if student_type == 'ug' else data.gd %}
                       ({% if forecast == -1 %}N/A{% elif forecast == INF %}∞{% else %}{{ forecast }}{% endif %})

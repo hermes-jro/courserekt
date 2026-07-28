@@ -218,7 +218,11 @@ def get_data(year: Union[str, int],
             f"{year}_{semester}_{ug_gd}_round_{round_number}"
         )
 
-        if not pdf_exists(year, semester, ug_gd, round_number):
+        table_cursor = conn.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?",
+            (table_name,),
+        )
+        if table_cursor.fetchone() is None:
             continue
 
         # Coordinates are allowlisted before constructing this identifier.
@@ -455,6 +459,32 @@ def pdf_exists(year: Union[str, int],
         bool: True if and only if the PDF file exists.
     """
     return Path.is_file(get_pdf_filepath(year, semester, student_type, round_num))
+
+
+def get_vacancy_pdf_filepath(
+    year: Union[str, int],
+    semester: Union[str, int],
+    round_num: Union[str, int],
+) -> Path:
+    """Return the bundled vacancy-report path for one round."""
+    return (
+        Path(BASE_DIR)
+        / "vacancy_history"
+        / "data"
+        / "pdfs"
+        / str(year)
+        / str(semester)
+        / f"round_{round_num}.pdf"
+    )
+
+
+def vacancy_pdf_exists(
+    year: Union[str, int],
+    semester: Union[str, int],
+    round_num: Union[str, int],
+) -> bool:
+    """Return whether a vacancy report is bundled for one round."""
+    return get_vacancy_pdf_filepath(year, semester, round_num).is_file()
 
 
 def get_latest_year_and_sem_with_data() -> tuple[str, str]:

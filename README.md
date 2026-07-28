@@ -1,7 +1,7 @@
 # :rocket: CourseRekt
 ## [Visit the maintained fork](https://agent.jro.sg/courserekt/) :computer:
 
-This fork includes NUS CourseReg data through **AY2026/2027 Semester 1, Round 1**. The report PDFs are downloaded from the official [NUS CourseReg Resources](https://www.nus.edu.sg/coursereg/resources.html) page and retained in the repository for reproducibility; hashes and retrieval details are recorded in [`docs/data-sources.md`](docs/data-sources.md).
+This fork includes NUS CourseReg demand/allocation data through **AY2026/2027 Semester 1, Round 1** and official vacancy data through **Round 2**. The report PDFs are downloaded from official NUS CourseReg endpoints and retained in the repository for reproducibility; hashes and retrieval details are recorded in [`docs/data-sources.md`](docs/data-sources.md). When a vacancy report is published before its corresponding demand/allocation report, the site shows the vacancy and labels demand as pending.
 
 ![Image of the website](docs/images/preview.png)
 
@@ -31,7 +31,8 @@ Each cell corresponds to the data in the PDF for the course's class and round nu
 
 `y` should usually be around `z`, as `z` is the University's way of predicting the number of `y` before intervention.
 
-- If `0 / z (z)` is displayed, no data found in the CourseReg PDF. This could be because:
+- If `Pending / z (z)` is displayed, the vacancy report is available but the demand/allocation report for that round has not yet been published. No oversubscription inference is made.
+- If `0 / z (z)` is displayed, the demand/allocation report exists but no row was found in it for that course/class. This could be because:
     - Nobody selected this course, despite having vacancies.
     - Nobody selected this course, but only because it was not selectable. (For example, GEN courses in Round 0.)
     - (Unlikely) The admin changed the number of vacancies retroactively to `0`, so nobody can get in regardless.

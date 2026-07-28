@@ -28,6 +28,14 @@ class OversubscriptionTestCase(unittest.TestCase):
         self.assertIsNone(self.formatter()(50, 100))
         self.assertIsNone(self.formatter()(-1, -1))
         self.assertIsNone(self.formatter()(2_147_483_647, 2_147_483_647))
+        self.assertIsNone(self.formatter()(2_147_483_647, 10))
+
+    def test_formats_missing_demand_as_pending(self) -> None:
+        formatter = getattr(app_module, "format_demand", None)
+        self.assertIsNotNone(formatter, "pending-demand formatter is missing")
+        typed_formatter = cast(Callable[[int], str], formatter)
+        self.assertEqual(typed_formatter(-1), "Pending")
+        self.assertEqual(typed_formatter(0), "0")
 
 
 if __name__ == "__main__":

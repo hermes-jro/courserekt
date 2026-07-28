@@ -19,6 +19,9 @@ class AppTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"26/27", response.data)
         self.assertIn(b"Round 1", response.data)
+        self.assertIn(b"Round 2", response.data)
+        self.assertIn(b"Vacancy only", response.data)
+        self.assertIn(b"Pending", response.data)
 
     def test_security_headers(self) -> None:
         response = self.app.get("/healthz")
@@ -35,7 +38,7 @@ class AppTestCase(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertNotIn(b"bootstrap-4.5.2.min.css", response.data)
-        self.assertIn(b'href="/courserekt/static/style.css?v=8"', response.data)
+        self.assertIn(b'href="/courserekt/static/style.css?v=9"', response.data)
         self.assertIn(b'action="/courserekt/"', response.data)
 
     def test_invalid_form_coordinates_are_rejected(self) -> None:
@@ -60,6 +63,13 @@ class AppTestCase(unittest.TestCase):
 
     def test_serve_latest_pdf(self) -> None:
         with closing(self.app.get("/pdfs/2627/1/ug/round_1.pdf")) as response:
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.mimetype, "application/pdf")
+
+    def test_serve_latest_vacancy_pdf(self) -> None:
+        with closing(
+            self.app.get("/pdfs/2627/1/vacancy/round_2.pdf")
+        ) as response:
             self.assertEqual(response.status_code, 200)
             self.assertEqual(response.mimetype, "application/pdf")
 

@@ -1,5 +1,21 @@
 # Data provenance
 
+## AY2026/2027 Semester 1 — Round 2 vacancy
+
+Retrieved at **2026-07-28 09:08:46 SGT** directly from the official NUS CourseReg endpoint, using `https://www.nus.edu.sg/coursereg/` as the HTTP referer and a normal browser user agent. The server filename was `VacancyRpt_R2.pdf`; the final response was HTTP 200 with `Content-Type: application/pdf`, `Content-Length: 991329`, no redirects, and effective URL `https://www.nus.edu.sg/coursereg/docs/VacancyRpt_R2.pdf`.
+
+The source first appeared in live Discord history in guild `1524704629558870127`, parent channel `nus-general` (`1524709642863902741`), thread `R2 Allocation Report Scheduled Fetch` (`1531463906919186514`). Hermes (`1524705469199810570`) posted the official-link message `1531467640722428095` at 2026-07-28 09:05:38 SGT and the attachment message `1531467647999414293` at 09:05:40 SGT with filename `VacancyRpt_R2_20260728_090358.pdf`. The Discord attachment and fresh official download were byte-identical.
+
+| Repository path | Official durable source | SHA-256 | Pages | Report date |
+| --- | --- | --- | ---: | --- |
+| `src/history/vacancy_history/data/pdfs/2627/1/round_2.pdf` | `https://www.nus.edu.sg/coursereg/docs/VacancyRpt_R2.pdf` | `40fb6145167103ee8e4afad9cd6ec6745a858791460b5136686e248b0f9e2ee7` | 252 | As at 27-Jul-26; updated 27/07/2026 |
+
+The file starts with `%PDF-1.6`, ends with a PDF EOF marker, and identifies its producer as Oracle Analytics Publisher. Strict parsing extracted 1,542,524 characters from all 252 pages with no empty pages: every page identifies `Course Class Vacancy Report`, `Semester 1, AY2026/2027`, and `As at 27-Jul-26`, while page 1 also states `updated: 27/07/2026`.
+
+`qpdf --check` found no syntax or stream-encoding errors. The repository active-content audit, run as an unprivileged user in a read-only, network-disabled container, found no embedded files, JavaScript, launch/open actions, external URIs, XFA, rich media, or other active content. The PDF uses AESv2 permissions but opens with an empty password and was completely parsed without executing embedded content.
+
+Only the official Round 2 **vacancy** report is included. No undergraduate or graduate Round 2 demand/allocation PDF has been added while those official reports remain unavailable.
+
 ## AY2026/2027 Semester 1 — Round 1
 
 Retrieved on 23 July 2026 from the official [NUS CourseReg Resources](https://www.nus.edu.sg/coursereg/resources.html) page after NUS announced that Round 1 results and demand/allocation reports were available.

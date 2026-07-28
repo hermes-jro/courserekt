@@ -80,7 +80,8 @@ def build(
         sys.exit(-1)
 
     logger.info("Merging Vacancy and CourseReg data...")
-    run_args = glob(crh_cleaned_csvs_glob)
+    run_args = glob(vh_cleaned_csvs_glob)
+    run_args.extend(glob(crh_cleaned_csvs_glob))
     try:
         merge_db_fn(run_args)
     except KeyboardInterrupt:

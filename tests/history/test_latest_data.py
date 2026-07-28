@@ -10,8 +10,8 @@ class LatestDataTestCase(unittest.TestCase):
         self.assertEqual(get_latest_year_and_sem_with_data(), ("2627", "1"))
         undergraduate = get_all_data("2627", "1", "ug")
         graduate = get_all_data("2627", "1", "gd")
-        self.assertEqual(len(undergraduate), 1813)
-        self.assertEqual(len(graduate), 1343)
+        self.assertEqual(len(undergraduate), 1822)
+        self.assertEqual(len(graduate), 1374)
         self.assertTrue(any(course["code"] == "CS2100" for course in undergraduate))
 
 

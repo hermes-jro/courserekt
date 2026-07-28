@@ -6,6 +6,14 @@ if [[ $EUID -ne 0 ]]; then
   exit 1
 fi
 
+# Serialize deployments so concurrent automation cannot race source.new/source.previous.
+lock_file=/run/lock/courserekt-deploy.lock
+exec 9>"$lock_file"
+if ! flock -n 9; then
+  echo "Another CourseRekt deployment is already in progress." >&2
+  exit 1
+fi
+
 script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
 repo_root=$(git -C "$script_dir/.." rev-parse --show-toplevel)
 if [[ ! "$repo_root/scripts/deploy.sh" -ef "${BASH_SOURCE[0]}" ]]; then

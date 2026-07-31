@@ -1,7 +1,7 @@
 # :rocket: CourseRekt
 ## [Visit the maintained fork](https://agent.jro.sg/courserekt/) :computer:
 
-This fork includes NUS CourseReg demand/allocation data through **AY2026/2027 Semester 1, Round 1** and official vacancy data through **Round 2**. The report PDFs are downloaded from official NUS CourseReg endpoints and retained in the repository for reproducibility; hashes and retrieval details are recorded in [`docs/data-sources.md`](docs/data-sources.md). When a vacancy report is published before its corresponding demand/allocation report, the site shows the vacancy and labels demand as pending.
+This fork includes NUS CourseReg demand/allocation and official vacancy data through **AY2026/2027 Semester 1, Round 2**. The report PDFs are downloaded from official NUS CourseReg endpoints and retained in the repository for reproducibility; hashes and retrieval details are recorded in [`docs/data-sources.md`](docs/data-sources.md). When a vacancy report is published before its corresponding demand/allocation report, the site shows the vacancy and labels demand as pending.
 
 ![Image of the website](docs/images/preview.png)
 

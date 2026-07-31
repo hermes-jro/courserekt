@@ -20,7 +20,7 @@ class AppTestCase(unittest.TestCase):
         self.assertIn(b"26/27", response.data)
         self.assertIn(b"Round 1", response.data)
         self.assertIn(b"Round 2", response.data)
-        self.assertIn(b"Vacancy only", response.data)
+        self.assertNotIn(b"Vacancy only", response.data)
         self.assertIn(b"Pending", response.data)
 
     def test_security_headers(self) -> None:
